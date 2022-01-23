@@ -3,6 +3,7 @@ import random
 from enum import Enum
 from collections import namedtuple
 import numpy as np
+import math
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
@@ -60,7 +61,9 @@ class SnakeGameAI:
         if self.food in self.snake:
             self._place_food()
 
-
+    def distance(self, point1, point2):
+        return math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
+    
     def play_step(self, action):
         self.frame_iteration += 1
         # 1. collect user input
@@ -70,6 +73,7 @@ class SnakeGameAI:
                 quit()
         
         # 2. move
+        old_head = self.head
         self._move(action) # update the head
         self.snake.insert(0, self.head)
         
@@ -78,15 +82,18 @@ class SnakeGameAI:
         game_over = False
         if self.is_collision() or self.frame_iteration > 100*len(self.snake):
             game_over = True
-            reward = -10
+            reward = -1
             return reward, game_over, self.score
-
         # 4. place new food or just move
-        if self.head == self.food:
+        elif self.head == self.food:
             self.score += 1
-            reward = 10
+            reward = 1
             self._place_food()
         else:
+            Lt = len(self.snake)
+            Dt = self.distance(old_head, self.food)
+            Dt1 = self.distance(self.head, self.food)
+            reward = math.log((Lt+Dt)/(Lt+Dt1), Lt)
             self.snake.pop()
         
         # 5. update ui and clock
