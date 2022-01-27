@@ -76,7 +76,10 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+        
+        # Timeout condition
+        p_steps =  20*len(self.snake) + 10
+        if self.is_collision() or self.frame_iteration > p_steps:
             game_over = True
             reward = -10
             return reward, game_over, self.score
