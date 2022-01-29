@@ -1,1 +1,0 @@
-p_steps =  20*len(self.snake) + 10

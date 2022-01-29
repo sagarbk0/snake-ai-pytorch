@@ -76,12 +76,18 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        
-        # Timeout condition
-        p_steps =  20*len(self.snake) + 10
-        if self.is_collision() or self.frame_iteration > p_steps:
+
+        # 3.1 collision detection
+        if self.is_collision():
             game_over = True
             reward = -10
+            return reward, game_over, self.score
+
+        # 3.2 timeout condition
+        p_steps = 100*len(self.snake)
+        if self.frame_iteration > p_steps:
+            game_over = True
+            reward = -0.5 / len(self.snake)
             return reward, game_over, self.score
 
         # 4. place new food or just move
