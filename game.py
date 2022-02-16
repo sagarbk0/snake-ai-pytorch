@@ -24,7 +24,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 400 # Original speed = 40
 
 class SnakeGameAI:
 
@@ -51,6 +51,7 @@ class SnakeGameAI:
         self.food = None
         self._place_food()
         self.frame_iteration = 0
+        self.frame_timeout_period = 0        # Restart frame_timeout_period
 
 
     def _place_food(self):
@@ -63,6 +64,8 @@ class SnakeGameAI:
 
     def play_step(self, action):
         self.frame_iteration += 1
+        self.frame_timeout_period += 1           # Update frame_timeout_period
+
         # 1. collect user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -83,16 +86,22 @@ class SnakeGameAI:
             reward = -10
             return reward, game_over, self.score
 
-        # 3.2 timeout condition
-        p_steps = 100*len(self.snake)
-        if self.frame_iteration > p_steps:
-            game_over = True
+        # 3.2 timeout strategy
+        p_steps = ( 0.7*len(self.snake) ) + 10
+        print("Frame Iteration = {f}, P steps = {p}".format( p = p_steps, f = self.frame_timeout_period ))
+        if self.frame_timeout_period > p_steps:
             reward = -0.5 / len(self.snake)
-            return reward, game_over, self.score
+
+        # 3.3 idle too long
+        if self.frame_timeout_period == 1000:
+            game_over = True
+            reward = -20
+            return reward, game_over, self.score   
 
         # 4. place new food or just move
         if self.head == self.food:
             self.score += 1
+            self.frame_timeout_period = 0        # Reset frame_timeout_period
             reward = 10
             self._place_food()
         else:
