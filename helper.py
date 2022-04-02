@@ -20,5 +20,5 @@ def plot(scores, mean_scores, title = None):
     plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
     plt.show(block=False)
     if title:
-        plt.savefig(f'refined_results/{title}.png')
+        plt.savefig(f'results/{title}.png')
     plt.pause(.1)

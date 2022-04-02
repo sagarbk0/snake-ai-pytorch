@@ -144,8 +144,8 @@ def train():
             plot_mean_scores.append(mean_score)
 
             if agent.n_games == 250:
-                title = 'Dist rew x1, food +10, crash -10, smoothness +- 10, g 0.5'
-                f = open(f'refined_results/{title}.txt', 'w')
+                title = 'Results'
+                f = open(f'results/{title}.txt', 'w')
                 f.write(f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n{game.total_iteration / agent.n_games}\n')
                 f.write(",".join([str(i) for i in plot_scores]))
                 f.close()
