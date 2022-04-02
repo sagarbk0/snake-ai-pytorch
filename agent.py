@@ -15,7 +15,7 @@ class Agent:
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 # randomness
-        self.gamma = 0.9 # discount rate
+        self.gamma = 0.5 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(11, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
@@ -134,14 +134,23 @@ def train():
                 record = score
                 agent.model.save()
 
-            print('Game', agent.n_games, 'Score', score, 'Record:', record)
-
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
-            plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores)
 
+            # print('Game', agent.n_games, 'Score', score, 'Record:', record, 'Mean score', mean_score)
+            # print('Max steps', game.max_iteration, 'Average steps', game.total_iteration / agent.n_games)
+
+            plot_mean_scores.append(mean_score)
+
+            if agent.n_games == 250:
+                title = 'Dist rew x1, food +10, crash -10, smoothness +- 10, g 0.5'
+                f = open(f'refined_results/{title}.txt', 'w')
+                f.write(f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n{game.total_iteration / agent.n_games}\n')
+                f.write(",".join([str(i) for i in plot_scores]))
+                f.close()
+                plot(plot_scores, plot_mean_scores, title)
+                break
 
 if __name__ == '__main__':
     train()
