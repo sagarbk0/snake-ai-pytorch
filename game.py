@@ -127,7 +127,7 @@ class SnakeGameAI:
         if self.is_collision() or self.frame_iteration > 100*len(self.snake):
             game_over = True
             reward = -10
-            # return reward, game_over, self.score
+            return reward, game_over, self.score
         # 4. place new food or just move
         elif self.head == self.food:
             self.score += 1
@@ -141,7 +141,7 @@ class SnakeGameAI:
             Lt = len(self.snake)
             Dt = self.distance(old_head, self.food)
             Dt1 = self.distance(self.head, self.food)
-            reward = math.log((Lt+Dt)/(Lt+Dt1), Lt)
+            reward = 10*math.log((Lt+Dt)/(Lt+Dt1), Lt)
             self.snake.pop()
         
         # print(self.head)
@@ -159,11 +159,11 @@ class SnakeGameAI:
                         reward -= 10
                     elif tailRating == maxTail:
                         reward += 10
-                    # distWall = poss[2]
-                    # if distWall == minWall:
-                    #     reward -= 10
-                    # elif distWall == maxWall:
-                    #     reward += 10
+                    distWall = poss[2]
+                    if distWall == minWall:
+                        reward -= 10
+                    elif distWall == maxWall:
+                        reward += 10
         # if norm(self.head.x) in [0, self.cols] or norm(self.head.y) in [0, self.rows]:
         #     reward -= 10
 
