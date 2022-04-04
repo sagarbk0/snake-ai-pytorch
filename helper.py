@@ -3,11 +3,14 @@ from IPython import display
 
 plt.ion()
 
-def plot(scores, mean_scores):
+def plot(scores, mean_scores, title = None):
     display.clear_output(wait=True)
     display.display(plt.gcf())
     plt.clf()
-    plt.title('Training...')
+    if title:
+        plt.title(title)
+    else:
+        plt.title('Training...')
     plt.xlabel('Number of Games')
     plt.ylabel('Score')
     plt.plot(scores)
@@ -16,4 +19,6 @@ def plot(scores, mean_scores):
     plt.text(len(scores)-1, scores[-1], str(scores[-1]))
     plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
     plt.show(block=False)
+    if title:
+        plt.savefig(f'results/{title}.png')
     plt.pause(.1)
