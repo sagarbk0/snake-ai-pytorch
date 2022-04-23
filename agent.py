@@ -12,6 +12,7 @@ MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
 
+
 class Agent:
 
     def __init__(self):
@@ -19,14 +20,14 @@ class Agent:
         Initializes hyperparameters, memory deque, model and trainer
         """
         self.n_games = 0
-        self.epsilon = 0 # randomness
-        self.gamma = 0.5 # discount rate
-        self.memory = deque(maxlen=MAX_MEMORY) # popleft()
+        self.epsilon = 0  # randomness
+        self.gamma = 0.5  # discount rate
+        self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Linear_QNet(11, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-
-    def get_state(self, game):
+    @staticmethod
+    def get_state(game):
         """
         Get current state of game instance.
         :param game: SnakeGameAI()
@@ -48,35 +49,35 @@ class Agent:
 
         state = [
             # Danger straight
-            (dir_r and game.is_collision(point_r)) or 
-            (dir_l and game.is_collision(point_l)) or 
-            (dir_u and game.is_collision(point_u)) or 
+            (dir_r and game.is_collision(point_r)) or
+            (dir_l and game.is_collision(point_l)) or
+            (dir_u and game.is_collision(point_u)) or
             (dir_d and game.is_collision(point_d)),
 
             # Danger right
-            (dir_u and game.is_collision(point_r)) or 
-            (dir_d and game.is_collision(point_l)) or 
-            (dir_l and game.is_collision(point_u)) or 
+            (dir_u and game.is_collision(point_r)) or
+            (dir_d and game.is_collision(point_l)) or
+            (dir_l and game.is_collision(point_u)) or
             (dir_r and game.is_collision(point_d)),
 
             # Danger left
-            (dir_d and game.is_collision(point_r)) or 
-            (dir_u and game.is_collision(point_l)) or 
-            (dir_r and game.is_collision(point_u)) or 
+            (dir_d and game.is_collision(point_r)) or
+            (dir_u and game.is_collision(point_l)) or
+            (dir_r and game.is_collision(point_u)) or
             (dir_l and game.is_collision(point_d)),
-            
+
             # Move direction
             dir_l,
             dir_r,
             dir_u,
             dir_d,
-            
+
             # Food location 
             game.food.x < game.head.x,  # food left
             game.food.x > game.head.x,  # food right
             game.food.y < game.head.y,  # food up
             game.food.y > game.head.y  # food down
-            ]
+        ]
 
         return np.array(state, dtype=int)
 
@@ -89,17 +90,17 @@ class Agent:
         :param next_state: ndarray
         :param done: bool
         """
-        self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
+        self.memory.append((state, action, reward, next_state, done))  # popleft if MAX_MEMORY is reached
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
+            mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
         else:
             mini_sample = self.memory
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        #for state, action, reward, nexrt_state, done in mini_sample:
+        # for state, action, reward, nexrt_state, done in mini_sample:
         #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, game, state, action, reward, next_state, done):
@@ -114,20 +115,19 @@ class Agent:
         """
         release_frame = 0
         if reward == 10:
-            frame_number= game.frame_iteration
-            l = game.length
-            if l<=10:
-                m=6
-            else :
-                m = math.floor(0.6*l+2)
-            y = False    
+            frame_number = game.frame_iteration
+            length = game.length
+            if length <= 10:
+                m = 6
+            else:
+                m = math.floor(0.6 * length + 2)
+            y = False
             release_frame = frame_number + m
             self.trainer.train_step(state, action, reward, next_state, done)
-        if game.frame_iteration>= release_frame:
+        if game.frame_iteration >= release_frame:
             y = True
-        if y :
+        if y:
             self.trainer.train_step(state, action, reward, next_state, done)
-
 
     def get_action(self, state):
         """
@@ -137,7 +137,7 @@ class Agent:
         """
         # random moves: tradeoff exploration / exploitation
         self.epsilon = 80 - self.n_games
-        final_move = [0,0,0]
+        final_move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 2)
             final_move[move] = 1
@@ -188,19 +188,19 @@ def train():
             total_score += score
             mean_score = total_score / agent.n_games
 
-            # print('Game', agent.n_games, 'Score', score, 'Record:', record, 'Mean score', mean_score)
-            # print('Max steps', game.max_iteration, 'Average steps', game.total_iteration / agent.n_games)
-
             plot_mean_scores.append(mean_score)
 
             if agent.n_games == 250:
                 title = 'Combined - DPA, Training Gap, Timeout, Smoothness, Distance, DistWall 250'
                 f = open(f'results/{title}.txt', 'w')
-                f.write(f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n{game.total_iteration / agent.n_games}\n')
+                f.write(
+                    f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n'
+                    f'{game.total_iteration / agent.n_games}\n')
                 f.write(",".join([str(i) for i in plot_scores]))
                 f.close()
                 plot(plot_scores, plot_mean_scores, title)
                 break
+
 
 if __name__ == '__main__':
     train()
