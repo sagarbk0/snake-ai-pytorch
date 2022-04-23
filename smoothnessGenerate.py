@@ -3,8 +3,8 @@ facingDirections = [[-1,0],[0,1],[1,0],[0,-1]]
 rows = 26
 cols = 34
 
-f = open('newfile.txt','w')
-f = open('newfile.txt','a')
+f = open('smoothnessGraphs.txt','w')
+f = open('smoothnessGraphs.txt','a')
 
 def new_point(loc, new_dist, new_dir, stack, emptyBoard, minToWall):
     straight_loc = [loc[0] + facingDirections[new_dir][0], loc[1] + facingDirections[new_dir][1]]

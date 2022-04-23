@@ -1,3 +1,5 @@
+import math
+
 import torch
 import random
 import numpy as np
@@ -13,6 +15,9 @@ LR = 0.001
 class Agent:
 
     def __init__(self):
+        """
+        Initializes hyperparameters, memory deque, model and trainer
+        """
         self.n_games = 0
         self.epsilon = 0 # randomness
         self.gamma = 0.5 # discount rate
@@ -22,12 +27,20 @@ class Agent:
 
 
     def get_state(self, game):
+        """
+        Get current state of game instance.
+        :param game: SnakeGameAI()
+        :return: ndarray
+        """
         head = game.snake[0]
+
+        # left, right, up, down points relative to current point
         point_l = Point(head.x - 20, head.y)
         point_r = Point(head.x + 20, head.y)
         point_u = Point(head.x, head.y - 20)
         point_d = Point(head.x, head.y + 20)
-        
+
+        # boolean values which indicate which direction the snake is facing
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
         dir_u = game.direction == Direction.UP
@@ -68,6 +81,14 @@ class Agent:
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
+        """
+        Store old state, new state and corresponding game results in memory deque
+        :param state: ndarray
+        :param action: list[int]
+        :param reward: int
+        :param next_state: ndarray
+        :param done: bool
+        """
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
 
     def train_long_memory(self):
@@ -81,10 +102,39 @@ class Agent:
         #for state, action, reward, nexrt_state, done in mini_sample:
         #    self.trainer.train_step(state, action, reward, next_state, done)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+    def train_short_memory(self, game, state, action, reward, next_state, done):
+        """
+
+        :param game: SnakeGameAI()
+        :param state: ndarray
+        :param action: list[int]
+        :param reward: int
+        :param next_state: ndarray
+        :param done: bool
+        """
+        release_frame = 0
+        if reward == 10:
+            frame_number= game.frame_iteration
+            l = game.length
+            if l<=10:
+                m=6
+            else :
+                m = math.floor(0.6*l+2)
+            y = False    
+            release_frame = frame_number + m
+            self.trainer.train_step(state, action, reward, next_state, done)
+        if game.frame_iteration>= release_frame:
+            y = True
+        if y :
+            self.trainer.train_step(state, action, reward, next_state, done)
+
 
     def get_action(self, state):
+        """
+
+        :param state: ndarray
+        :return: list[int]
+        """
         # random moves: tradeoff exploration / exploitation
         self.epsilon = 80 - self.n_games
         final_move = [0,0,0]
@@ -119,7 +169,7 @@ def train():
         state_new = agent.get_state(game)
 
         # train short memory
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
+        agent.train_short_memory(game, state_old, final_move, reward, state_new, done)
 
         # remember
         agent.remember(state_old, final_move, reward, state_new, done)
@@ -144,7 +194,7 @@ def train():
             plot_mean_scores.append(mean_score)
 
             if agent.n_games == 250:
-                title = 'Results with distWall'
+                title = 'Combined - DPA, Training Gap, Timeout, Smoothness, Distance, DistWall 250'
                 f = open(f'results/{title}.txt', 'w')
                 f.write(f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n{game.total_iteration / agent.n_games}\n')
                 f.write(",".join([str(i) for i in plot_scores]))

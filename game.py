@@ -38,6 +38,11 @@ def pointNorm(point: Point):
 class SnakeGameAI:
 
     def __init__(self, w=640, h=480):
+        """
+
+        :param w: int
+        :param h: int
+        """
         self.w = w
         self.h = h
         # init display
@@ -49,7 +54,7 @@ class SnakeGameAI:
         self.max_iteration = 0
         self.cols = w//BLOCK_SIZE
         self.rows = h//BLOCK_SIZE
-        with open('newfile.txt') as file:
+        with open('smoothnessGraphs.txt') as file:
             lines = file.readlines()
         self.minDistToWall = dict()
         self.smoothnessRatings = dict()
@@ -72,7 +77,7 @@ class SnakeGameAI:
         #         stringArr = [str(y) for y in x]
         #         stringArr = [y if len(y) == 2 else '0'+y for y in stringArr]
         #         f.write(' '.join(stringArr) + '\n')
-
+        
         self.reset()
 
     def reset(self):
@@ -90,6 +95,12 @@ class SnakeGameAI:
         self.max_iteration = max(self.frame_iteration, self.max_iteration)
         self.total_iteration += self.frame_iteration
         self.frame_iteration = 0
+        self.length= 0
+        self.Frame1 = 0
+        self.Frame2 = 0
+        self.DPA = 0
+        self.M=0
+        self.frame_timeout_period = 0        # Restart frame_timeout_period
 
 
     def _place_food(self):
@@ -104,6 +115,8 @@ class SnakeGameAI:
 
     def play_step(self, action):
         self.frame_iteration += 1
+        self.frame_timeout_period += 1           # Update frame_timeout_period
+
         # 1. collect user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -124,13 +137,27 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+        if self.is_collision():# or self.frame_iteration > 100*len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
+
+                    # 3.2 timeout strategy
+        p_steps = ( 0.7*len(self.snake) ) + 10
+        # print("Frame Iteration = {f}, P steps = {p}".format( p = p_steps, f = self.frame_timeout_period ))
+        if self.frame_timeout_period > p_steps:
+            reward = -0.5 / len(self.snake)
+
+        # 3.3 idle too long
+        if self.frame_timeout_period == 1000:
+            game_over = True
+            reward = -20
+            return reward, game_over, self.score
+
         # 4. place new food or just move
         elif self.head == self.food:
             self.score += 1
+            self.frame_timeout_period = 0        # Reset frame_timeout_period
             reward = 10
             self._place_food()
         else:
@@ -237,13 +264,29 @@ class SnakeGameAI:
     #     return emptyBoard
 
     def is_collision(self, pt=None):
+        if self.Frame2 <= (self.frame_iteration + self.M) and self.M > 0 and self.DPA == 0:
+            self.DPA = 1
+        else:
+            self.DPA = 0
+            
+
         if pt is None:
             pt = self.head
         # hits boundary
         if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
+                        #self.updateM()
+            self.Frame1 = int(self.Frame2)
+            self.Frame2 = int(self.frame_iteration)
+            if self.Frame1 != 0 and self.Frame2 != 0:
+                self.M = self.length - (self.Frame2 - self.Frame1) + 1
             return True
         # hits itself
         if pt in self.snake[1:]:
+            self.Frame1 = int(self.Frame2)
+            self.Frame2 = int(self.frame_iteration)
+            if self.Frame1 != 0 and self.Frame2 != 0:
+                self.M = int(self.length - (self.Frame2 - self.Frame1) + 1)
+
             return True
 
         return False
