@@ -9,7 +9,9 @@ f = open('smoothnessGraphs.txt', 'a')
 
 def new_point(loc, new_dist, new_dir, stack, emptyBoard, minToWall):
     """
-
+    Updates one point of the graph.
+    Adds neighbouring points to stack if they have a lower score.
+    Also saves minToWall score.
     :param loc: list[int]
     :param new_dist: int
     :param new_dir: int
@@ -28,7 +30,10 @@ def new_point(loc, new_dist, new_dir, stack, emptyBoard, minToWall):
 
 def smoothness_rating(headx, heady, direction):
     """
-
+    Receives starting point (headx, heady) and direction to travel.
+    Creates empty graph with each point initialized to infinity smoothness score.
+    Uses stack to repeatedly call new_point function to update graph, 
+    till the full smoothness graph has been generated.
     :param headx: int
     :param heady: int
     :param direction: int
