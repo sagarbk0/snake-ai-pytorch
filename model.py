@@ -9,7 +9,6 @@ import numpy as np
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         """
-
         :param input_size: int
         :param hidden_size: int
         :param output_size: int
@@ -19,18 +18,12 @@ class Linear_QNet(nn.Module):
         self.linear2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        """
-
-        :param x:
-        :return:
-        """
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
         return x
 
-    def save(self, file_name='model.pth'):
+    def save(self, file_name='model_new.pth'):
         """
-
         :param file_name: str
         """
         model_folder_path = './model'
@@ -44,7 +37,6 @@ class Linear_QNet(nn.Module):
 class QTrainer:
     def __init__(self, model, lr, gamma):
         """
-
         :param model: Linear_QNet()
         :param lr: float
         :param gamma: float
@@ -57,7 +49,6 @@ class QTrainer:
 
     def train_step(self, state, action, reward, next_state, done):
         """
-
         :param state: ndarray
         :param action: list[int]
         :param reward: int

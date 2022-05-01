@@ -3,13 +3,12 @@ import random
 from enum import Enum
 from collections import namedtuple
 import numpy as np
+import os
 import math
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
 
-
-# font = pygame.font.SysFont('arial', 25)
 
 class Direction(Enum):
     RIGHT = 1
@@ -34,33 +33,50 @@ facingDirections = [[-1, 0], [0, 1], [1, 0], [0, -1]]
 
 
 def norm(floatnum):
+    """
+    Get float location on graph, convert to integer cell number that can be referenced in smoothness graph
+    :param floatnum: float
+    :return: int
+    """
     return int(floatnum // BLOCK_SIZE)
 
 
-def pointNorm(point: Point):
+def point_norm(point: Point):
+    """
+    Return norm() for the X and Y of a point
+    :param point: Point
+    :return: list[int]
+    """
     return [norm(point.x), norm(point.y)]
 
 
 class SnakeGameAI:
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w=640, h=480, speed=SPEED, visual=False, left_position=False, pygame=pygame):
         """
-
+        w: width, h: height
         :param w: int
         :param h: int
         """
         self.w = w
         self.h = h
         self.display = None
+
+        self.pygame = pygame
         # init display
-        # self.display = pygame.display.set_mode((self.w, self.h))
-        # pygame.display.set_caption('Snake')
-        self.clock = pygame.time.Clock()
+        if visual:
+            os.environ["SDL_VIDEO_WINDOW_POS"] = "%i,%i" % (200, 200)
+            self.display = self.pygame.display.set_mode((self.w, self.h))
+            self.pygame.display.set_caption('Snake AI')
+
+        self.clock = self.pygame.time.Clock()
         self.total_iteration = 0
         self.frame_iteration = 0
         self.max_iteration = 0
         self.cols = w // BLOCK_SIZE
         self.rows = h // BLOCK_SIZE
+
+        self.speed = speed
 
         # retrieve smoothness graphs from file
         with open('smoothnessGraphs.txt') as file:
@@ -77,15 +93,12 @@ class SnakeGameAI:
                 x = int(details[0])
                 y = int(details[1])
                 direction = int(details[2])
-                minDistToWall = int(details[3])
-                smoothnessRating = details[4]  # 2D array of smoothness ratings stored in string format
-                smoothnessRating = [[int(srlNum) for srlNum in srl.split(",")] for srl in smoothnessRating.split(";")]
-                self.minDistToWall[(x, y, direction)] = minDistToWall
-                self.smoothnessRatings[(x, y, direction)] = smoothnessRating
+                min_dist_to_wall = int(details[3])
+                smoothness_rating = details[4]  # 2D array of smoothness ratings stored in string format
+                smoothness_rating = [[int(srlNum) for srlNum in srl.split(",")] for srl in smoothness_rating.split(";")]
+                self.minDistToWall[(x, y, direction)] = min_dist_to_wall
+                self.smoothnessRatings[(x, y, direction)] = smoothness_rating
 
-        self.reset()
-
-    def reset(self):
         # initial game state
         self.direction = Direction.RIGHT
 
@@ -127,7 +140,8 @@ class SnakeGameAI:
 
     def play_step(self, action):
         """
-
+        Given an action, call functions to update state, and deduce the reward, updated score and whether the game has
+        ended. Feed back these results to be used by the neural network.
         :param action: list[int]
         :return: tuple[int, bool, int]
         """
@@ -135,10 +149,11 @@ class SnakeGameAI:
         self.frame_timeout_period += 1  # Update frame_timeout_period
 
         # 1. collect user input
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+        # (commented out, because it interferes when using side_by_side.py)
+        # for event in self.pygame.event.get():
+        #     if event.type == self.pygame.QUIT:
+        #         self.pygame.quit()
+        #         quit()
 
         possDirs, minTail, maxTail, minWall, maxWall = self.smoothness_rating()
 
@@ -150,36 +165,37 @@ class SnakeGameAI:
         self.snake.insert(0, self.head)
 
         # 3. check if game over
-        reward = 0
         game_over = False
         if self.is_collision():  # or self.frame_iteration > 100*len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
 
-            # 3.2 timeout strategy
+        reward = 0
+
+        # 3.2 timeout strategy
         p_steps = (0.7 * len(self.snake)) + 10
         if self.frame_timeout_period > p_steps:
-            reward = -0.5 / len(self.snake)
+            reward += -0.5 / len(self.snake)
 
         # 3.3 idle too long
         if self.frame_timeout_period == 1000:
             game_over = True
-            reward = -20
+            reward += -20
             return reward, game_over, self.score
 
         # 4. place new food or just move
         elif self.head == self.food:
             self.score += 1
             self.frame_timeout_period = 0  # Reset frame_timeout_period
-            reward = 10
+            reward += 10
             self._place_food()
         else:
             # Distance reward function based on Wei et al. equation
             length = len(self.snake)
             distance_old = self.distance(old_head, self.food)
             distance_new = self.distance(self.head, self.food)
-            reward = 10 * math.log((length + distance_old) / (length + distance_new), length)
+            reward += 10 * math.log((length + distance_old) / (length + distance_new), length)
             self.snake.pop()
 
         # smoothness/space rating rewards
@@ -191,7 +207,6 @@ class SnakeGameAI:
                     # negative reward (penalty) if tail rating or distance to wall are minimum
                     # positive reward if tail rating or distance to wall are maximum
                     # no reward if either are intermediate
-
                     tailRating = poss[1]
                     if tailRating == minTail:
                         reward -= 10
@@ -203,8 +218,8 @@ class SnakeGameAI:
                     elif distWall == maxWall:
                         reward += 10
 
-        # self._update_ui()
-        self.clock.tick(SPEED)
+        self._update_ui()
+        self.clock.tick(self.speed)
         # 6. return reward, game over and score
         return reward, game_over, self.score
 
@@ -244,7 +259,7 @@ class SnakeGameAI:
 
     def is_collision(self, pt=None):
         """
-
+        Detects if snake's head has collided with wall or with its tail
         :param pt: Point()
         :return: bool
         """
@@ -275,22 +290,23 @@ class SnakeGameAI:
         return False
 
     def _update_ui(self):
+        # Update game display
         if self.display:
             self.display.fill(BLACK)
 
             for pt in self.snake:
-                pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
-                pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
+                self.pygame.draw.rect(self.display, BLUE1, self.pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
+                self.pygame.draw.rect(self.display, BLUE2, self.pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
 
-            pygame.draw.rect(self.display, RED, pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
+            self.pygame.draw.rect(self.display, RED, self.pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
             text = font.render("Score: " + str(self.score), True, WHITE)
             self.display.blit(text, [0, 0])
-            pygame.display.flip()
+            self.pygame.display.flip()
 
     def _move(self, action):
         """
-
+        Get new direction and update self.head based on direction
         :param action: list[int]
         """
         # [straight, right, left]

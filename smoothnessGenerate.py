@@ -7,24 +7,24 @@ f = open('smoothnessGraphs.txt', 'w')
 f = open('smoothnessGraphs.txt', 'a')
 
 
-def new_point(loc, new_dist, new_dir, stack, emptyBoard, minToWall):
+def new_point(loc, new_dist, new_dir, stack, empty_board, min_to_wall):
     """
     Updates one point of the graph.
     Adds neighbouring points to stack if they have a lower score.
-    Also saves minToWall score.
+    Also saves min_to_wall score.
     :param loc: list[int]
     :param new_dist: int
     :param new_dir: int
     :param stack: bool
-    :param emptyBoard: list[list[int]]
-    :param minToWall: list[int]
+    :param empty_board: list[list[int]]
+    :param min_to_wall: list[int]
     """
     straight_loc = [loc[0] + facingDirections[new_dir][0], loc[1] + facingDirections[new_dir][1]]
     if 0 <= straight_loc[0] < rows and 0 <= straight_loc[1] < cols:
         if straight_loc[0] == 0 or straight_loc[0] == rows - 1 or straight_loc[1] == 0 or straight_loc[1] == cols - 1:
-            minToWall[0] = min(minToWall[0], new_dist)
-        if emptyBoard[straight_loc[0]][straight_loc[1]] > new_dist:
-            emptyBoard[straight_loc[0]][straight_loc[1]] = new_dist
+            min_to_wall[0] = min(min_to_wall[0], new_dist)
+        if empty_board[straight_loc[0]][straight_loc[1]] > new_dist:
+            empty_board[straight_loc[0]][straight_loc[1]] = new_dist
             stack.append([straight_loc, new_dir, new_dist, True])
 
 
@@ -47,7 +47,7 @@ def smoothness_rating(headx, heady, direction):
     while len(stack) > 0:
         loc, dir, dist, lr = stack.pop()
         new_point(loc, dist + 1, dir, stack, emptyBoard, minToWall)
-        if lr == True:
+        if lr:
             new_point(loc, dist + 1, (dir + 1) % 4, stack, emptyBoard, minToWall)
             new_point(loc, dist + 1, (dir - 1) % 4, stack, emptyBoard, minToWall)
 
@@ -55,36 +55,41 @@ def smoothness_rating(headx, heady, direction):
     f.write(f"{headx}_{heady}_{direction}_{minToWall[0]}_{strBoard}\n")
 
 
-for i in range(rows):
-    for j in range(cols):
-        if i == 0 and j == 0:
-            smoothness_rating(i, j, 1)
-            smoothness_rating(i, j, 2)
-        elif i == 0 and j == cols - 1:
-            smoothness_rating(i, j, 2)
-            smoothness_rating(i, j, 3)
-        elif i == rows - 1 and j == 0:
-            smoothness_rating(i, j, 0)
-            smoothness_rating(i, j, 1)
-        elif i == rows - 1 and j == cols - 1:
-            smoothness_rating(i, j, 0)
-            smoothness_rating(i, j, 3)
-        elif i == 0:
-            smoothness_rating(i, j, 1)
-            smoothness_rating(i, j, 2)
-            smoothness_rating(i, j, 3)
-        elif i == rows - 1:
-            smoothness_rating(i, j, 0)
-            smoothness_rating(i, j, 1)
-            smoothness_rating(i, j, 3)
-        elif j == 0:
-            smoothness_rating(i, j, 0)
-            smoothness_rating(i, j, 1)
-            smoothness_rating(i, j, 2)
-        elif j == cols - 1:
-            smoothness_rating(i, j, 0)
-            smoothness_rating(i, j, 2)
-            smoothness_rating(i, j, 3)
-        else:
-            for d in range(4):
-                smoothness_rating(i, j, d)
+if __name__ == "__main__":
+    # Generates smoothness graphs
+    # The cells located near walls have either 2 or 3 smoothness graphs, based on the provided conditions
+    # Other cells have 4 smoothness graphs, one for each direction
+
+    for i in range(rows):
+        for j in range(cols):
+            if i == 0 and j == 0:
+                smoothness_rating(i, j, 1)
+                smoothness_rating(i, j, 2)
+            elif i == 0 and j == cols - 1:
+                smoothness_rating(i, j, 2)
+                smoothness_rating(i, j, 3)
+            elif i == rows - 1 and j == 0:
+                smoothness_rating(i, j, 0)
+                smoothness_rating(i, j, 1)
+            elif i == rows - 1 and j == cols - 1:
+                smoothness_rating(i, j, 0)
+                smoothness_rating(i, j, 3)
+            elif i == 0:
+                smoothness_rating(i, j, 1)
+                smoothness_rating(i, j, 2)
+                smoothness_rating(i, j, 3)
+            elif i == rows - 1:
+                smoothness_rating(i, j, 0)
+                smoothness_rating(i, j, 1)
+                smoothness_rating(i, j, 3)
+            elif j == 0:
+                smoothness_rating(i, j, 0)
+                smoothness_rating(i, j, 1)
+                smoothness_rating(i, j, 2)
+            elif j == cols - 1:
+                smoothness_rating(i, j, 0)
+                smoothness_rating(i, j, 2)
+                smoothness_rating(i, j, 3)
+            else:
+                for d in range(4):
+                    smoothness_rating(i, j, d)

@@ -15,7 +15,7 @@ LR = 0.001
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, model=Linear_QNet(11, 256, 3)):
         """
         Initializes hyperparameters, memory deque, model and trainer
         """
@@ -23,7 +23,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.5  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(11, 256, 3)
+        self.model = model
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     @staticmethod
@@ -93,6 +93,7 @@ class Agent:
         self.memory.append((state, action, reward, next_state, done))  # popleft if MAX_MEMORY is reached
 
     def train_long_memory(self):
+        # Train based on a sample of memory that is batch size, or on full memory if memory is less than batch size.
         if len(self.memory) > BATCH_SIZE:
             mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
         else:
@@ -100,12 +101,10 @@ class Agent:
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        # for state, action, reward, nexrt_state, done in mini_sample:
-        #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, game, state, action, reward, next_state, done):
         """
-
+        Train based on the single instance represented by the given parameters
         :param game: SnakeGameAI()
         :param state: ndarray
         :param action: list[int]
@@ -131,7 +130,8 @@ class Agent:
 
     def get_action(self, state):
         """
-
+        Get random value, compare it to epsilon (exploration-exploitation trade-off) to determine whether the next
+        action is random or NN-based.
         :param state: ndarray
         :return: list[int]
         """
@@ -156,7 +156,8 @@ def train():
     total_score = 0
     record = 0
     agent = Agent()
-    game = SnakeGameAI()
+    # game = SnakeGameAI(visual=True, speed=10) # standard
+    game = SnakeGameAI(speed=10) #
     while True:
         # get old state
         state_old = agent.get_state(game)
@@ -188,10 +189,12 @@ def train():
             total_score += score
             mean_score = total_score / agent.n_games
 
-            plot_mean_scores.append(mean_score)
+            # plot_mean_scores.append(mean_score)
+            # plot(plot_scores, plot_mean_scores)
 
             if agent.n_games == 250:
-                title = 'Combined - DPA, Training Gap, Timeout, Smoothness, Distance, DistWall 250'
+                agent.model.save()
+                title = 'Combined Model, Speed 10 (250 epochs)'
                 f = open(f'results/{title}.txt', 'w')
                 f.write(
                     f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n'

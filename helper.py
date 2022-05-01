@@ -5,6 +5,12 @@ plt.ion()
 
 
 def plot(scores, mean_scores, title=None):
+    """
+    displays and saves plot of scores (blue line) and mean scores (orange line)
+    :param scores: list[int]
+    :param mean_scores: list[float]
+    :param title: str
+    """
     display.clear_output(wait=True)
     display.display(plt.gcf())
     plt.clf()
