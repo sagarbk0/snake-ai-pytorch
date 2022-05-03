@@ -123,10 +123,11 @@ class Agent:
             y = False
             release_frame = frame_number + m
             self.trainer.train_step(state, action, reward, next_state, done)
-        if game.frame_iteration >= release_frame:
-            y = True
-        if y:
-            self.trainer.train_step(state, action, reward, next_state, done)
+        else:
+            if game.frame_iteration >= release_frame:
+                y = True
+            if y:
+                self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
         """
@@ -150,14 +151,14 @@ class Agent:
         return final_move
 
 
-def train():
+def train(n_games=250):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
     agent = Agent()
     # game = SnakeGameAI(visual=True, speed=10) # standard
-    game = SnakeGameAI(speed=10) #
+    game = SnakeGameAI() #
     while True:
         # get old state
         state_old = agent.get_state(game)
@@ -189,12 +190,11 @@ def train():
             total_score += score
             mean_score = total_score / agent.n_games
 
-            # plot_mean_scores.append(mean_score)
-            # plot(plot_scores, plot_mean_scores)
+            plot_mean_scores.append(mean_score)
 
-            if agent.n_games == 250:
+            if agent.n_games == n_games:
                 agent.model.save()
-                title = 'Combined Model, Speed 10 (250 epochs)'
+                title = f'Combined Model {n_games} epochs'
                 f = open(f'results/{title}.txt', 'w')
                 f.write(
                     f'{agent.n_games}\n{record}\n{mean_score}\n{game.max_iteration}\n'
@@ -202,7 +202,7 @@ def train():
                 f.write(",".join([str(i) for i in plot_scores]))
                 f.close()
                 plot(plot_scores, plot_mean_scores, title)
-                break
+                return agent
 
 
 if __name__ == '__main__':

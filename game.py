@@ -99,6 +99,9 @@ class SnakeGameAI:
                 self.minDistToWall[(x, y, direction)] = min_dist_to_wall
                 self.smoothnessRatings[(x, y, direction)] = smoothness_rating
 
+        self.reset()
+
+    def reset(self):
         # initial game state
         self.direction = Direction.RIGHT
 
